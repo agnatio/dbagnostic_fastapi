@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import Optional
 import os
 
-# Get the base directory
+# Get the base directory of the project
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     class Config:
         case_sensitive = True
         env_file = ".env"
+
+    @property
+    def DATABASE_DIR(self) -> str:
+        """Get the directory where the database file should be stored"""
+        return os.path.dirname(self.DATABASE_URL.replace("sqlite:///", ""))
 
 
 @lru_cache()
