@@ -1,0 +1,25 @@
+./
+./
+    ├── folders.txt
+    ├── directory_structure.py
+    ├── app/
+        ├── main.py
+        ├── config.py
+        ├── routes/
+            ├── routes_user.py
+            ├── routes_auth.py
+        ├── schemas/
+            ├── schemas_user.py
+            ├── schemas_auth.py
+        ├── db/
+            ├── base.py
+            ├── session.py
+            ├── enums/
+                ├── enums_user.py
+            ├── models/
+                ├── models_user.py
+        ├── utils/
+            ├── utils_auth.py
+        ├── dependencies/
+            ├── dependency_auth.py
+    ├── tests/
