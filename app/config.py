@@ -12,7 +12,7 @@ print(f"Full path to .env: {os.path.abspath('.env')}")
 
 class Settings(BaseSettings):
     # Application settings
-    DB_TYPE: str = "sqlite"
+    # DB_TYPE: str = "sqlite"
 
     PROJECT_NAME: str = "FastAPI Auth System"
     VERSION: str = "1.0.0"

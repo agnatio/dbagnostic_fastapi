@@ -1,6 +1,7 @@
 ./
 ./
     ├── folders.txt
+    ├── requirements.txt
     ├── .gitignore
     ├── directory_structure.py
     ├── app/
