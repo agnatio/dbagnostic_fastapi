@@ -58,7 +58,7 @@ class SQLiteSettings(DatabaseSettings):
 class PostgresSettings(DatabaseSettings):
     def __init__(self):
         super().__init__()
-        self.host = os.getenv("POSTGRES_HOST", "49.12.220.213")
+        self.host = os.getenv("POSTGRES_HOST", "niatakso_db")
         self.port = os.getenv("POSTGRES_PORT", "5432")
         self.user = os.getenv("POSTGRES_USER", "postgres")
         self.password = os.getenv("POSTGRES_PASSWORD", "fido&espero&amo")
@@ -119,16 +119,22 @@ class DatabaseFactory:
     _engine = None
     _session_maker = None
 
+    # Define database settings mapping
+    _db_settings_map = {"sqlite": SQLiteSettings, "postgresql": PostgresSettings}
+
     def __init__(self):
         print("Initializing DatabaseFactory")
-        # Import settings here to avoid circular import
         from app.config import settings
 
-        # Use settings instead of os.getenv
         db_type = settings.DB_TYPE.lower()
         print(f"Selected database type: {db_type}")
 
-        self._settings = SQLiteSettings() if db_type == "sqlite" else PostgresSettings()
+        # Get settings class from mapping
+        settings_class = self._db_settings_map.get(db_type)
+        if not settings_class:
+            raise ValueError(f"Unsupported database type: {db_type}")
+
+        self._settings = settings_class()
         print(f"Using settings class: {type(self._settings).__name__}")
         print(f"Database URL: {self._settings.DATABASE_URL}")
 
