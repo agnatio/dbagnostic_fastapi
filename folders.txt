@@ -5,6 +5,7 @@
     ├── directory_structure.py
     ├── app/
         ├── main.py
+        ├── config.py
         ├── routes/
             ├── routes_user.py
             ├── routes_auth.py
@@ -14,7 +15,6 @@
         ├── db/
             ├── database.py
             ├── base.py
-            ├── config.py
             ├── session.py
             ├── enums/
                 ├── enums_user.py

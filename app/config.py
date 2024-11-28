@@ -1,8 +1,9 @@
+# app/config.py
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import Optional
 import os
-from app.db.database import DatabaseSettings
+from app.db.database import DatabaseFactory
 
 
 class Settings(BaseSettings):
@@ -20,16 +21,16 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: list = ["http://localhost:8080"]
 
-    # Database settings are accessed through DatabaseSettings
-    _db_settings: DatabaseSettings = None
+    # Database settings are accessed through DatabaseFactory
+    _db_factory: DatabaseFactory = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._db_settings = DatabaseSettings()
+        self._db_factory = DatabaseFactory.get_instance()
 
     @property
-    def db(self) -> DatabaseSettings:
-        return self._db_settings
+    def db(self) -> DatabaseFactory:
+        return self._db_factory
 
     class Config:
         case_sensitive = True
@@ -41,5 +42,5 @@ def get_settings() -> Settings:
     return Settings()
 
 
-# Usage example:
+# Create settings instance
 settings = get_settings()
