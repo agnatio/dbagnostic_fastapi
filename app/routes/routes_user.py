@@ -1,7 +1,5 @@
 # app/routes/routes_user.py
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.db.session import get_db
+from fastapi import APIRouter, Depends
 from app.db.models.models_user import User
 from app.utils.utils_auth import get_current_user
 

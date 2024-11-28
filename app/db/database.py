@@ -8,8 +8,6 @@ import os
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-# from app.db.models.models_user import User
-
 
 class DatabaseSettings(ABC):
     def __init__(self):
@@ -58,7 +56,7 @@ class SQLiteSettings(DatabaseSettings):
 class PostgresSettings(DatabaseSettings):
     def __init__(self):
         super().__init__()
-        self.host = os.getenv("POSTGRES_HOST", "niatakso_db")
+        self.host = os.getenv("POSTGRES_HOST", "49.12.220.213")  # niatakso_db
         self.port = os.getenv("POSTGRES_PORT", "5432")
         self.user = os.getenv("POSTGRES_USER", "postgres")
         self.password = os.getenv("POSTGRES_PASSWORD", "fido&espero&amo")
