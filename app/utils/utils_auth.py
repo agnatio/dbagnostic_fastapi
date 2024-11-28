@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.db.config import settings
 from app.db.session import get_db
 from app.schemas.schemas_auth import TokenData
 
@@ -63,3 +63,14 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+def test_password_hash(password: str) -> bool:
+    """
+    Test password hashing and verification
+    Returns True if hash and verify work correctly
+    """
+    # Hash the password
+    hashed = get_password_hash(password)
+    # Verify the password
+    return verify_password(password, hashed)

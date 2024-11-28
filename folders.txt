@@ -1,10 +1,10 @@
 ./
 ./
     ├── folders.txt
+    ├── .gitignore
     ├── directory_structure.py
     ├── app/
         ├── main.py
-        ├── config.py
         ├── routes/
             ├── routes_user.py
             ├── routes_auth.py
@@ -12,7 +12,9 @@
             ├── schemas_user.py
             ├── schemas_auth.py
         ├── db/
+            ├── database.py
             ├── base.py
+            ├── config.py
             ├── session.py
             ├── enums/
                 ├── enums_user.py
@@ -22,4 +24,6 @@
             ├── utils_auth.py
         ├── dependencies/
             ├── dependency_auth.py
+        ├── database/
+    ├── database/
     ├── tests/
