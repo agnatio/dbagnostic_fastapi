@@ -3,11 +3,17 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import Optional
 import os
-from app.db.database import DatabaseFactory
+
+
+print(f"Current working directory: {os.getcwd()}")
+print(f".env file exists: {os.path.exists('.env')}")
+print(f"Full path to .env: {os.path.abspath('.env')}")
 
 
 class Settings(BaseSettings):
     # Application settings
+    DB_TYPE: str = "sqlite"
+
     PROJECT_NAME: str = "FastAPI Auth System"
     VERSION: str = "1.0.0"
     API_V1_PREFIX: str = "/api/v1"
@@ -21,20 +27,19 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: list = ["http://localhost:8080"]
 
-    # Database settings are accessed through DatabaseFactory
-    _db_factory: DatabaseFactory = None
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._db_factory = DatabaseFactory.get_instance()
+        print("=== Settings Initialization ===")
+        print(f"Loading from .env file")
+        print(f"DB_TYPE setting: {self.DB_TYPE}")
+        print("============================")
 
-    @property
-    def db(self) -> DatabaseFactory:
-        return self._db_factory
-
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
+    model_config = {
+        "case_sensitive": True,
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "allow",
+    }
 
 
 @lru_cache()

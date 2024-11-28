@@ -1,7 +1,7 @@
-# db/models/user.py
+# app/db/models/models_user.py
 from sqlalchemy import Boolean, Column, Integer, String, DateTime, Enum, Text
 from datetime import datetime, timedelta, timezone
-from app.db.base import Base
+from app.db.database import Base  # Updated import
 from app.db.enums.enums_user import UserRole, UserStatus
 
 
@@ -60,12 +60,6 @@ class User(Base):
     def is_password_reset_token_valid(self, token_expiry: datetime) -> bool:
         """
         Check if password reset token is valid and not expired.
-
-        Args:
-            token_expiry: The expiration datetime of the token
-
-        Returns:
-            bool: True if token is valid and not expired
         """
         if not token_expiry:
             return False

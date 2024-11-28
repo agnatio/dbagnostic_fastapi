@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from sqlalchemy import inspect
+
 
 from app.db.session import get_db
 from app.db.models.models_user import User
@@ -14,6 +16,7 @@ from app.utils.utils_auth import (
 from app.config import settings  # Import settings instead
 from app.schemas.schemas_auth import Token, UserCreate, UserLogin
 from app.db.enums.enums_user import UserStatus
+from app.db.database import DatabaseFactory, Base
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -95,11 +98,33 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     return {"message": "User created successfully"}
 
 
-@router.post("/test-auth", include_in_schema=False)
+@router.post("/test-auth", include_in_schema=True)
 async def test_auth(form_data: OAuth2PasswordRequestForm = Depends()):
     """Temporary endpoint to test password handling"""
     return {
         "username": form_data.username,
         "password_length": len(form_data.password),
         "password_first_char": form_data.password[0] if form_data.password else None,
+    }
+
+
+@router.get("/debug-tables", include_in_schema=True)
+async def debug_tables():
+    """Debug endpoint to check database tables"""
+    factory = DatabaseFactory.get_instance()
+    inspector = inspect(factory.engine)
+    tables = inspector.get_table_names()
+
+    table_details = {}
+    for table in tables:
+        columns = [
+            {"name": col["name"], "type": str(col["type"])}
+            for col in inspector.get_columns(table)
+        ]
+        table_details[table] = columns
+
+    return {
+        "tables": tables,
+        "details": table_details,
+        "metadata_tables": list(Base.metadata.tables.keys()),
     }

@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routes import routes_auth, routes_user
-from app.db.database import verify_database, init_database
+from app.db.database import verify_database, init_database, Base, DatabaseFactory
+from app.db.models.models_user import User
 
 
 @asynccontextmanager
@@ -13,20 +14,27 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for startup and shutdown events
     """
     try:
+        print("Starting application initialization...")
+
         # Verify database connection
         if not verify_database():
             raise Exception("Database connection failed")
+        print("Database connection verified successfully")
 
-        # Initialize database
-        init_database()
+        # Initialize database and create tables
+        print("Creating database tables...")
+        db_factory = DatabaseFactory.get_instance()
+        Base.metadata.create_all(bind=db_factory.engine)
+        print("Database tables created successfully")
 
         # Include routers
         app.include_router(routes_auth.router, prefix=settings.API_V1_PREFIX)
         app.include_router(routes_user.router, prefix=settings.API_V1_PREFIX)
+        print("Routers included successfully")
 
         yield
     finally:
-        # Cleanup code (if needed)
+        print("Shutting down application...")
         pass
 
 

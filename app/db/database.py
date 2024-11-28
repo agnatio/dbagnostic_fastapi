@@ -1,41 +1,41 @@
 # app/db/database.py
 from abc import ABC, abstractmethod
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.orm import sessionmaker, declared_attr, declarative_base
 from sqlalchemy.pool import StaticPool, QueuePool
 from typing import Generator, Dict, Any, Optional
 import os
-from enum import Enum
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-
-class DatabaseType(Enum):
-    SQLITE = "sqlite"
-    POSTGRES = "postgresql"
+# from app.db.models.models_user import User
 
 
 class DatabaseSettings(ABC):
     def __init__(self):
         self.BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.DB_DIR = os.path.join(self.BASE_DIR, "database")
-        os.makedirs(self.DB_DIR, exist_ok=True)
         self.ECHO_SQL = os.getenv("ECHO_SQL", "True").lower() == "true"
 
     @property
     @abstractmethod
     def DATABASE_URL(self) -> str:
-        """Database connection URL"""
         pass
 
     @property
     @abstractmethod
     def engine_settings(self) -> Dict[str, Any]:
-        """Database-specific engine settings"""
+        pass
+
+    @abstractmethod
+    def create_database_if_not_exists(self):
         pass
 
 
 class SQLiteSettings(DatabaseSettings):
     def __init__(self):
         super().__init__()
+        os.makedirs(self.DB_DIR, exist_ok=True)
         self._db_file = os.path.join(self.DB_DIR, "app.db")
 
     @property
@@ -50,15 +50,19 @@ class SQLiteSettings(DatabaseSettings):
             "echo": self.ECHO_SQL,
         }
 
+    def create_database_if_not_exists(self):
+        # SQLite creates database automatically
+        pass
+
 
 class PostgresSettings(DatabaseSettings):
     def __init__(self):
         super().__init__()
-        self.user = os.getenv("POSTGRES_USER", "postgres")
-        self.password = os.getenv("POSTGRES_PASSWORD", "postgres")
-        self.host = os.getenv("POSTGRES_HOST", "localhost")
+        self.host = os.getenv("POSTGRES_HOST", "49.12.220.213")
         self.port = os.getenv("POSTGRES_PORT", "5432")
-        self.database = os.getenv("POSTGRES_DB", "fastapi_db")
+        self.user = os.getenv("POSTGRES_USER", "postgres")
+        self.password = os.getenv("POSTGRES_PASSWORD", "fido&espero&amo")
+        self.database = os.getenv("POSTGRES_DB", "nt_p1")
         self.pool_size = int(os.getenv("DB_POOL_SIZE", "5"))
         self.max_overflow = int(os.getenv("DB_MAX_OVERFLOW", "10"))
 
@@ -75,6 +79,39 @@ class PostgresSettings(DatabaseSettings):
             "echo": self.ECHO_SQL,
         }
 
+    def create_database_if_not_exists(self):
+        """Create PostgreSQL database if it doesn't exist"""
+        # Connection string to connect to PostgreSQL server (not specific database)
+        conn_string = (
+            f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/postgres"
+        )
+
+        try:
+            # Connect to default database
+            conn = psycopg2.connect(conn_string)
+            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            cursor = conn.cursor()
+
+            # Check if database exists
+            cursor.execute(
+                f"SELECT 1 FROM pg_database WHERE datname = '{self.database}'"
+            )
+            exists = cursor.fetchone()
+
+            if not exists:
+                print(f"Creating database {self.database}")
+                cursor.execute(f"CREATE DATABASE {self.database}")
+                print(f"Database {self.database} created successfully")
+            else:
+                print(f"Database {self.database} already exists")
+
+            cursor.close()
+            conn.close()
+
+        except Exception as e:
+            print(f"Error creating database: {str(e)}")
+            raise
+
 
 class DatabaseFactory:
     _instance: Optional["DatabaseFactory"] = None
@@ -83,13 +120,23 @@ class DatabaseFactory:
     _session_maker = None
 
     def __init__(self):
-        # Initialize settings based on environment
-        db_type = os.getenv("DB_TYPE", "sqlite").lower()
+        print("Initializing DatabaseFactory")
+        # Import settings here to avoid circular import
+        from app.config import settings
+
+        # Use settings instead of os.getenv
+        db_type = settings.DB_TYPE.lower()
+        print(f"Selected database type: {db_type}")
+
         self._settings = SQLiteSettings() if db_type == "sqlite" else PostgresSettings()
+        print(f"Using settings class: {type(self._settings).__name__}")
+        print(f"Database URL: {self._settings.DATABASE_URL}")
+
+        # Create database if it doesn't exist
+        self._settings.create_database_if_not_exists()
 
     @classmethod
     def get_instance(cls) -> "DatabaseFactory":
-        """Get or create database factory instance"""
         if not cls._instance:
             cls._instance = cls()
         return cls._instance
@@ -97,17 +144,21 @@ class DatabaseFactory:
     @property
     def engine(self):
         if self._engine is None:
+            print("Creating new database engine...")
             self._engine = create_engine(
                 self._settings.DATABASE_URL, **self._settings.engine_settings
             )
+            print(f"Engine created successfully: {self._engine}")
         return self._engine
 
     @property
     def session_maker(self):
         if self._session_maker is None:
+            print("Creating new session maker...")
             self._session_maker = sessionmaker(
                 autocommit=False, autoflush=False, bind=self.engine
             )
+            print("Session maker created successfully")
         return self._session_maker
 
     def get_db(self) -> Generator:
@@ -118,7 +169,6 @@ class DatabaseFactory:
             session.close()
 
 
-# Base class for models
 class CustomBase:
     @declared_attr
     def __tablename__(cls):
@@ -128,13 +178,11 @@ class CustomBase:
 Base = declarative_base(cls=CustomBase)
 
 
-# Database dependency
 def get_db() -> Generator:
     return DatabaseFactory.get_instance().get_db()
 
 
 def verify_database() -> bool:
-    """Verify database connection"""
     try:
         db = next(get_db())
         db.execute(text("SELECT 1"))
@@ -144,8 +192,30 @@ def verify_database() -> bool:
         return False
 
 
-# Initialize tables
 def init_database():
     """Initialize database and create tables"""
+    print("=== Starting Database Initialization ===")
     factory = DatabaseFactory.get_instance()
+
+    # Print all available metadata tables before creation
+    print("Available tables in metadata:")
+    for table in Base.metadata.sorted_tables:
+        print(f"- {table.name}")
+
+    # Check if User model is properly registered
+    print("\nChecking User model registration...")
+    try:
+        from app.db.models.models_user import User
+
+        print(f"User model table name: {User.__table__.name}")
+        print(f"User model columns: {[c.name for c in User.__table__.columns]}")
+    except Exception as e:
+        print(f"Error importing User model: {str(e)}")
+
+    print("\nAttempting to create tables...")
     Base.metadata.create_all(bind=factory.engine)
+
+    # Verify tables after creation
+    inspector = inspect(factory.engine)
+    actual_tables = inspector.get_table_names()
+    print(f"\nActual tables in database after creation: {actual_tables}")
