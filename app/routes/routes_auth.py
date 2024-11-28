@@ -11,7 +11,7 @@ from app.utils.utils_auth import (
     create_access_token,
     get_password_hash,
 )
-from app.db.config import settings  # Import settings instead
+from app.config import settings  # Import settings instead
 from app.schemas.schemas_auth import Token, UserCreate, UserLogin
 from app.db.enums.enums_user import UserStatus
 
@@ -22,46 +22,26 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
 ):
-    # Debug prints
-    print(f"Login attempt with username/email: {form_data.username}")
-
-    # Query debug
-    user_query = db.query(User).filter(User.email == form_data.username)
-    print(f"SQL Query: {user_query}")
-
-    # Find user by email
-    user = user_query.first()
-
-    # Debug print user result
-    print(f"User found: {user is not None}")
-    if user:
-        print(f"User email: {user.email}")
+    # Try to find user by email or username
+    user = (
+        db.query(User)
+        .filter(
+            (User.email == form_data.username) | (User.username == form_data.username)
+        )
+        .first()
+    )
 
     if not user:
-        # Let's check if any users exist in the database
-        all_users = db.query(User).all()
-        print(f"Total users in database: {len(all_users)}")
-        if all_users:
-            print("Existing user emails:")
-            for u in all_users:
-                print(f"- {u.email}")
-
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="Incorrect username/email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    # Debug print (remove in production)
-    print(f"Attempting login for user: {user.email}")
-    print(
-        f"Password verification result: {verify_password(form_data.password, user.hashed_password)}"
-    )
 
     if not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password",
+            detail="Incorrect username/email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

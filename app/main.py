@@ -1,7 +1,7 @@
 # app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.db.config import settings
+from app.config import settings
 from app.routes import routes_auth, routes_user
 from sqlalchemy import inspect
 import os

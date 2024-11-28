@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app.db.config import settings
+from app.config import settings
 from app.db.session import get_db
 from app.schemas.schemas_auth import TokenData
 
